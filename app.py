@@ -28,6 +28,17 @@ BASE_OPTS = {
 }
 
 COOKIEFILE = os.environ.get("COOKIEFILE")
+# Support passing raw cookies via an env var (convenient for Render secrets)
+COOKIE_CONTENT = os.environ.get("COOKIE_CONTENT")
+if COOKIE_CONTENT and not COOKIEFILE:
+    # write to a predictable temp path inside the container
+    tmp_path = "/tmp/youtube_cookies.txt"
+    try:
+        with open(tmp_path, "w") as f:
+            f.write(COOKIE_CONTENT)
+        COOKIEFILE = tmp_path
+    except Exception:
+        COOKIEFILE = None
 
 
 def get_ydl_opts(extra_opts=None):
