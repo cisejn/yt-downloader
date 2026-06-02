@@ -27,6 +27,17 @@ BASE_OPTS = {
     "no_warnings": True,
 }
 
+COOKIEFILE = os.environ.get("COOKIEFILE")
+
+
+def get_ydl_opts(extra_opts=None):
+    opts = {**BASE_OPTS}
+    if COOKIEFILE:
+        opts["cookiefile"] = COOKIEFILE
+    if extra_opts:
+        opts.update(extra_opts)
+    return opts
+
 
 def clean_filename(name):
     return re.sub(r'[\\/*?:"<>|]', "_", name)
@@ -57,8 +68,7 @@ def run_download(job_id, url, dl_type, quality):
     out_tmpl = str(DOWNLOAD_DIR / f"{job_id}.%(ext)s")
 
     if dl_type == "audio":
-        ydl_opts = {
-            **BASE_OPTS,
+        ydl_opts = get_ydl_opts({
             "format": "bestaudio/best",
             "outtmpl": out_tmpl,
             "progress_hooks": [progress_hook],
@@ -67,7 +77,7 @@ def run_download(job_id, url, dl_type, quality):
                 "preferredcodec": "mp3",
                 "preferredquality": 192,
             }],
-        }
+        })
     else:
         fmt = {
             "1080": "best",
@@ -76,13 +86,12 @@ def run_download(job_id, url, dl_type, quality):
             "360":  "best",
         }.get(quality, "best")
 
-        ydl_opts = {
-            **BASE_OPTS,
+        ydl_opts = get_ydl_opts({
             "format": fmt,
             "outtmpl": out_tmpl,
             "progress_hooks": [progress_hook],
             "merge_output_format": "mp4",
-        }
+        })
 
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -110,7 +119,7 @@ def get_info():
     if not url:
         return jsonify({"error": "URL required"}), 400
     try:
-        ydl_opts = {**BASE_OPTS, "skip_download": True}
+        ydl_opts = get_ydl_opts({"skip_download": True})
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(url, download=False)
         return jsonify({
